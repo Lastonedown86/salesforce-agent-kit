@@ -1,0 +1,49 @@
+{
+  "name": "@cloudcrafter/salesforce-agent-kit",
+  "version": "1.0.1",
+  "description": "AI agent kit for Salesforce development - patterns, best practices, and automation for Apex, LWC, Triggers, and more",
+  "main": "dist/index.js",
+  "bin": {
+    "cloudcrafter-agent-kit": "dist/agent-kit/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "npm run build && node --import tsx --test tests/*.test.ts",
+    "test:quick": "node --test dist/tests/*.test.js",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "keywords": [
+    "salesforce",
+    "apex",
+    "lwc",
+    "lightning",
+    "ai",
+    "agent",
+    "kit",
+    "cli",
+    "devtools"
+  ],
+  "author": "cloudcrafter",
+  "license": "MIT",
+  "type": "module",
+  "files": [
+    "dist",
+    "agent-kit"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "commander": "^12.0.0",
+    "chalk": "^5.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}

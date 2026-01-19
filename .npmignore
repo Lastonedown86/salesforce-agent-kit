@@ -1,0 +1,27 @@
+# Ignore source files
+src/
+tsconfig.json
+
+# Ignore development files
+*.log
+.git/
+.gitignore
+.agent/
+
+# Ignore source maps (keep declarations)
+dist/**/*.js.map
+dist/**/*.d.ts.map
+
+# Ignore test files
+tests/
+__tests__/
+*.test.ts
+*.spec.ts
+
+# Ignore editor configs
+.vscode/
+.idea/
+
+# Keep these (explicitly listed in files field)
+# dist/
+# skills/
