@@ -2,7 +2,8 @@
 
 > AI agent kit for Salesforce development - skills, workflows, patterns and automation for Apex, LWC, Triggers, and more.
 
-[![npm version](https://badge.fury.io/js/@cloudcrafter%2Fsalesforce-agent-kit.svg)](https://www.npmjs.com/package/@cloudcrafter/salesforce-agent-kit)
+[![npm version](https://img.shields.io/npm/v/@cloudcrafter/salesforce-agent-kit.svg)](https://www.npmjs.com/package/@cloudcrafter/salesforce-agent-kit)
+[![GitHub](https://img.shields.io/github/stars/Lastonedown86/salesforce-agent-kit?style=social)](https://github.com/Lastonedown86/salesforce-agent-kit)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## What is this?
