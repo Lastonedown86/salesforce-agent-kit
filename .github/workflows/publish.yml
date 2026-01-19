@@ -29,6 +29,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Reset any changes from npm ci
+        run: git checkout -- .
+
       - name: Bump version
         run: 'npm version patch -m "chore: bump version to %s [skip ci]"'
 
