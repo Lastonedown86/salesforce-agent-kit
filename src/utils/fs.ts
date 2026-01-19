@@ -9,14 +9,14 @@ const __dirname = dirname(__filename);
 function findPackageRoot(): string {
   // Try standard path (./dist/utils/fs.js -> ../../)
   let root = join(__dirname, '..', '..');
-  if (existsSync(join(root, 'skills')) && existsSync(join(root, 'package.json'))) {
+  if (existsSync(join(root, '.agent', 'skills')) && existsSync(join(root, 'package.json'))) {
     return root;
   }
   
   // Fallback: traverse up to find package.json with our name
   let current = __dirname;
   for (let i = 0; i < 5; i++) {
-    if (existsSync(join(current, 'skills')) && existsSync(join(current, 'package.json'))) {
+    if (existsSync(join(current, '.agent', 'skills')) && existsSync(join(current, 'package.json'))) {
       return current;
     }
     current = dirname(current);
@@ -27,7 +27,7 @@ function findPackageRoot(): string {
 }
 
 const PACKAGE_ROOT = findPackageRoot();
-const SKILLS_SOURCE = join(PACKAGE_ROOT, 'skills');
+const SKILLS_SOURCE = join(PACKAGE_ROOT, '.agent', 'skills');
 
 export const SKILLS_TARGET = join(process.cwd(), '.agent', 'skills');
 
