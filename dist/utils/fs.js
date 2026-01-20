@@ -23,7 +23,9 @@ function findPackageRoot() {
 }
 const PACKAGE_ROOT = findPackageRoot();
 const SKILLS_SOURCE = join(PACKAGE_ROOT, '.agent', 'skills');
+const AGENTS_SOURCE = join(PACKAGE_ROOT, '.agent', 'agents');
 export const SKILLS_TARGET = join(process.cwd(), '.agent', 'skills');
+export const AGENTS_TARGET = join(process.cwd(), '.agent', 'agents');
 /**
  * Get all available skill categories from the package
  */
@@ -125,5 +127,97 @@ export function removeCategory(categoryName) {
  */
 export function hasInstalledSkills() {
     return existsSync(SKILLS_TARGET) && readdirSync(SKILLS_TARGET).length > 0;
+}
+/**
+ * Get all available agents from the package
+ */
+export function getAvailableAgents() {
+    if (!existsSync(AGENTS_SOURCE)) {
+        return [];
+    }
+    const agents = [];
+    const entries = readdirSync(AGENTS_SOURCE);
+    for (const file of entries) {
+        if (file.endsWith('.md')) {
+            agents.push({
+                name: file.replace('.md', ''),
+                path: join(AGENTS_SOURCE, file)
+            });
+        }
+    }
+    return agents;
+}
+/**
+ * Get installed agents from the project
+ */
+export function getInstalledAgents() {
+    if (!existsSync(AGENTS_TARGET)) {
+        return [];
+    }
+    const agents = [];
+    const entries = readdirSync(AGENTS_TARGET);
+    for (const file of entries) {
+        if (file.endsWith('.md')) {
+            agents.push({
+                name: file.replace('.md', ''),
+                path: join(AGENTS_TARGET, file)
+            });
+        }
+    }
+    return agents;
+}
+/**
+ * Copy a single agent from package to project
+ */
+export function copyAgent(agentName, force = false) {
+    const sourcePath = join(AGENTS_SOURCE, `${agentName}.md`);
+    const targetPath = join(AGENTS_TARGET, `${agentName}.md`);
+    if (!existsSync(sourcePath)) {
+        return false;
+    }
+    if (existsSync(targetPath) && !force) {
+        return false;
+    }
+    // Ensure target directory exists
+    mkdirSync(AGENTS_TARGET, { recursive: true });
+    // Copy the agent file
+    cpSync(sourcePath, targetPath);
+    return true;
+}
+/**
+ * Copy all agents from package to project
+ */
+export function copyAllAgents(force = false) {
+    const agents = getAvailableAgents();
+    const copied = [];
+    const skipped = [];
+    // Ensure base directory exists
+    mkdirSync(AGENTS_TARGET, { recursive: true });
+    for (const agent of agents) {
+        if (copyAgent(agent.name, force)) {
+            copied.push(agent.name);
+        }
+        else {
+            skipped.push(agent.name);
+        }
+    }
+    return { copied, skipped };
+}
+/**
+ * Remove an agent from the project
+ */
+export function removeAgent(agentName) {
+    const targetPath = join(AGENTS_TARGET, `${agentName}.md`);
+    if (!existsSync(targetPath)) {
+        return false;
+    }
+    rmSync(targetPath, { force: true });
+    return true;
+}
+/**
+ * Check if agents are installed
+ */
+export function hasInstalledAgents() {
+    return existsSync(AGENTS_TARGET) && readdirSync(AGENTS_TARGET).filter(f => f.endsWith('.md')).length > 0;
 }
 //# sourceMappingURL=fs.js.map

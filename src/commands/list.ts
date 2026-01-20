@@ -1,18 +1,19 @@
 import { logger } from '../utils/logger.js';
-import { getAvailableCategories, getInstalledCategories } from '../utils/fs.js';
+import { getAvailableCategories, getInstalledCategories, getAvailableAgents, getInstalledAgents } from '../utils/fs.js';
 
 interface ListOptions {
   verbose?: boolean;
 }
 
 export function listCommand(options: ListOptions): void {
-  logger.header('Salesforce Agent Skills');
+  logger.header('Salesforce Agent Kit');
 
   const available = getAvailableCategories();
   const installed = getInstalledCategories();
   const installedNames = new Set(installed.map(c => c.name));
 
-  console.log('Available categories:\n');
+  // Show skills
+  console.log('Skill Categories:\n');
 
   for (const category of available) {
     const isInstalled = installedNames.has(category.name);
@@ -29,8 +30,27 @@ export function listCommand(options: ListOptions): void {
   const installedSkills = installed.reduce((sum, cat) => sum + cat.skills.length, 0);
 
   console.log();
-  console.log(`  Total: ${available.length} categories, ${totalSkills} skills`);
-  console.log(`  Installed: ${installed.length} categories, ${installedSkills} skills`);
+  console.log(`  Skills: ${available.length} categories, ${totalSkills} skills (${installedSkills} installed)`);
+
+  // Show agents
+  const availableAgents = getAvailableAgents();
+  const installedAgentsArr = getInstalledAgents();
+  const installedAgentNames = new Set(installedAgentsArr.map(a => a.name));
+
+  if (availableAgents.length > 0) {
+    console.log();
+    console.log('Specialized Agents:\n');
+
+    for (const agent of availableAgents) {
+      const isInstalled = installedAgentNames.has(agent.name);
+      const status = isInstalled ? ' ✓' : '';
+      console.log(`  🤖 ${agent.name}${status}`);
+    }
+
+    console.log();
+    console.log(`  Agents: ${availableAgents.length} available (${installedAgentsArr.length} installed)`);
+  }
+
   console.log();
 
   if (!options.verbose) {
