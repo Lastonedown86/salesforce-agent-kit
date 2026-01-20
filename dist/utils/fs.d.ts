@@ -1,5 +1,6 @@
 export declare const SKILLS_TARGET: string;
 export declare const AGENTS_TARGET: string;
+export declare const WORKFLOWS_TARGET: string;
 export interface SkillCategory {
     name: string;
     path: string;
@@ -64,4 +65,36 @@ export declare function removeAgent(agentName: string): boolean;
  * Check if agents are installed
  */
 export declare function hasInstalledAgents(): boolean;
+export interface Workflow {
+    name: string;
+    path: string;
+    description?: string;
+}
+/**
+ * Get all available workflows from the package
+ */
+export declare function getAvailableWorkflows(): Workflow[];
+/**
+ * Get installed workflows from the project
+ */
+export declare function getInstalledWorkflows(): Workflow[];
+/**
+ * Copy a single workflow from package to project
+ */
+export declare function copyWorkflow(workflowName: string, force?: boolean): boolean;
+/**
+ * Copy all workflows from package to project
+ */
+export declare function copyAllWorkflows(force?: boolean): {
+    copied: string[];
+    skipped: string[];
+};
+/**
+ * Remove a workflow from the project
+ */
+export declare function removeWorkflow(workflowName: string): boolean;
+/**
+ * Check if workflows are installed
+ */
+export declare function hasInstalledWorkflows(): boolean;
 //# sourceMappingURL=fs.d.ts.map

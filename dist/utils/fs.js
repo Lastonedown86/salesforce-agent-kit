@@ -24,8 +24,10 @@ function findPackageRoot() {
 const PACKAGE_ROOT = findPackageRoot();
 const SKILLS_SOURCE = join(PACKAGE_ROOT, '.agent', 'skills');
 const AGENTS_SOURCE = join(PACKAGE_ROOT, '.agent', 'agents');
+const WORKFLOWS_SOURCE = join(PACKAGE_ROOT, '.agent', 'workflows');
 export const SKILLS_TARGET = join(process.cwd(), '.agent', 'skills');
 export const AGENTS_TARGET = join(process.cwd(), '.agent', 'agents');
+export const WORKFLOWS_TARGET = join(process.cwd(), '.agent', 'workflows');
 /**
  * Get all available skill categories from the package
  */
@@ -219,5 +221,97 @@ export function removeAgent(agentName) {
  */
 export function hasInstalledAgents() {
     return existsSync(AGENTS_TARGET) && readdirSync(AGENTS_TARGET).filter(f => f.endsWith('.md')).length > 0;
+}
+/**
+ * Get all available workflows from the package
+ */
+export function getAvailableWorkflows() {
+    if (!existsSync(WORKFLOWS_SOURCE)) {
+        return [];
+    }
+    const workflows = [];
+    const entries = readdirSync(WORKFLOWS_SOURCE);
+    for (const file of entries) {
+        if (file.endsWith('.md')) {
+            workflows.push({
+                name: file.replace('.md', ''),
+                path: join(WORKFLOWS_SOURCE, file)
+            });
+        }
+    }
+    return workflows;
+}
+/**
+ * Get installed workflows from the project
+ */
+export function getInstalledWorkflows() {
+    if (!existsSync(WORKFLOWS_TARGET)) {
+        return [];
+    }
+    const workflows = [];
+    const entries = readdirSync(WORKFLOWS_TARGET);
+    for (const file of entries) {
+        if (file.endsWith('.md')) {
+            workflows.push({
+                name: file.replace('.md', ''),
+                path: join(WORKFLOWS_TARGET, file)
+            });
+        }
+    }
+    return workflows;
+}
+/**
+ * Copy a single workflow from package to project
+ */
+export function copyWorkflow(workflowName, force = false) {
+    const sourcePath = join(WORKFLOWS_SOURCE, `${workflowName}.md`);
+    const targetPath = join(WORKFLOWS_TARGET, `${workflowName}.md`);
+    if (!existsSync(sourcePath)) {
+        return false;
+    }
+    if (existsSync(targetPath) && !force) {
+        return false;
+    }
+    // Ensure target directory exists
+    mkdirSync(WORKFLOWS_TARGET, { recursive: true });
+    // Copy the workflow file
+    cpSync(sourcePath, targetPath);
+    return true;
+}
+/**
+ * Copy all workflows from package to project
+ */
+export function copyAllWorkflows(force = false) {
+    const workflows = getAvailableWorkflows();
+    const copied = [];
+    const skipped = [];
+    // Ensure base directory exists
+    mkdirSync(WORKFLOWS_TARGET, { recursive: true });
+    for (const workflow of workflows) {
+        if (copyWorkflow(workflow.name, force)) {
+            copied.push(workflow.name);
+        }
+        else {
+            skipped.push(workflow.name);
+        }
+    }
+    return { copied, skipped };
+}
+/**
+ * Remove a workflow from the project
+ */
+export function removeWorkflow(workflowName) {
+    const targetPath = join(WORKFLOWS_TARGET, `${workflowName}.md`);
+    if (!existsSync(targetPath)) {
+        return false;
+    }
+    rmSync(targetPath, { force: true });
+    return true;
+}
+/**
+ * Check if workflows are installed
+ */
+export function hasInstalledWorkflows() {
+    return existsSync(WORKFLOWS_TARGET) && readdirSync(WORKFLOWS_TARGET).filter(f => f.endsWith('.md')).length > 0;
 }
 //# sourceMappingURL=fs.js.map

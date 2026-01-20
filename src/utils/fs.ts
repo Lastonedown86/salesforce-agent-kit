@@ -29,9 +29,11 @@ function findPackageRoot(): string {
 const PACKAGE_ROOT = findPackageRoot();
 const SKILLS_SOURCE = join(PACKAGE_ROOT, '.agent', 'skills');
 const AGENTS_SOURCE = join(PACKAGE_ROOT, '.agent', 'agents');
+const WORKFLOWS_SOURCE = join(PACKAGE_ROOT, '.agent', 'workflows');
 
 export const SKILLS_TARGET = join(process.cwd(), '.agent', 'skills');
 export const AGENTS_TARGET = join(process.cwd(), '.agent', 'agents');
+export const WORKFLOWS_TARGET = join(process.cwd(), '.agent', 'workflows');
 
 export interface SkillCategory {
   name: string;
@@ -283,4 +285,126 @@ export function removeAgent(agentName: string): boolean {
  */
 export function hasInstalledAgents(): boolean {
   return existsSync(AGENTS_TARGET) && readdirSync(AGENTS_TARGET).filter(f => f.endsWith('.md')).length > 0;
+}
+
+// ============================================
+// Workflow Functions
+// ============================================
+
+export interface Workflow {
+  name: string;
+  path: string;
+  description?: string;
+}
+
+/**
+ * Get all available workflows from the package
+ */
+export function getAvailableWorkflows(): Workflow[] {
+  if (!existsSync(WORKFLOWS_SOURCE)) {
+    return [];
+  }
+
+  const workflows: Workflow[] = [];
+  const entries = readdirSync(WORKFLOWS_SOURCE);
+
+  for (const file of entries) {
+    if (file.endsWith('.md')) {
+      workflows.push({
+        name: file.replace('.md', ''),
+        path: join(WORKFLOWS_SOURCE, file)
+      });
+    }
+  }
+
+  return workflows;
+}
+
+/**
+ * Get installed workflows from the project
+ */
+export function getInstalledWorkflows(): Workflow[] {
+  if (!existsSync(WORKFLOWS_TARGET)) {
+    return [];
+  }
+
+  const workflows: Workflow[] = [];
+  const entries = readdirSync(WORKFLOWS_TARGET);
+
+  for (const file of entries) {
+    if (file.endsWith('.md')) {
+      workflows.push({
+        name: file.replace('.md', ''),
+        path: join(WORKFLOWS_TARGET, file)
+      });
+    }
+  }
+
+  return workflows;
+}
+
+/**
+ * Copy a single workflow from package to project
+ */
+export function copyWorkflow(workflowName: string, force: boolean = false): boolean {
+  const sourcePath = join(WORKFLOWS_SOURCE, `${workflowName}.md`);
+  const targetPath = join(WORKFLOWS_TARGET, `${workflowName}.md`);
+
+  if (!existsSync(sourcePath)) {
+    return false;
+  }
+
+  if (existsSync(targetPath) && !force) {
+    return false;
+  }
+
+  // Ensure target directory exists
+  mkdirSync(WORKFLOWS_TARGET, { recursive: true });
+
+  // Copy the workflow file
+  cpSync(sourcePath, targetPath);
+  return true;
+}
+
+/**
+ * Copy all workflows from package to project
+ */
+export function copyAllWorkflows(force: boolean = false): { copied: string[]; skipped: string[] } {
+  const workflows = getAvailableWorkflows();
+  const copied: string[] = [];
+  const skipped: string[] = [];
+
+  // Ensure base directory exists
+  mkdirSync(WORKFLOWS_TARGET, { recursive: true });
+
+  for (const workflow of workflows) {
+    if (copyWorkflow(workflow.name, force)) {
+      copied.push(workflow.name);
+    } else {
+      skipped.push(workflow.name);
+    }
+  }
+
+  return { copied, skipped };
+}
+
+/**
+ * Remove a workflow from the project
+ */
+export function removeWorkflow(workflowName: string): boolean {
+  const targetPath = join(WORKFLOWS_TARGET, `${workflowName}.md`);
+
+  if (!existsSync(targetPath)) {
+    return false;
+  }
+
+  rmSync(targetPath, { force: true });
+  return true;
+}
+
+/**
+ * Check if workflows are installed
+ */
+export function hasInstalledWorkflows(): boolean {
+  return existsSync(WORKFLOWS_TARGET) && readdirSync(WORKFLOWS_TARGET).filter(f => f.endsWith('.md')).length > 0;
 }

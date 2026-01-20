@@ -4,6 +4,7 @@ This category contains guides and best practices for migrating Salesforce Classi
 
 ## Available Guides
 
+- **[Classic to Lightning Strategy](./classic-to-lightning.md)**: Comprehensive framework for migration strategy, assessment, and feature mapping.
 - **[Visualforce to LWC](./vf-to-lwc.md)**: Patterns for converting Visualforce pages and tags to LWC.
 - **[Aura to LWC](./aura-to-lwc.md)**: Mapping Aura concepts, attributes, and events to LWC equivalents.
 - **[Apex Communication](./apex-communication.md)**: Migrating data access from `RemoteAction` and `action.setCallback` to `@wire` and Imperative Apex.
