@@ -132,19 +132,7 @@ jobs:
           git push --tags
 
       - name: Publish to NPM
-        if: steps.check-version.outputs.needs_bump == 'true' || steps.existing-version.outputs.new_version != ''
-        run: |
-          # Double-check we're not publishing an existing version
-          CURRENT_VERSION=$(node -p "require('./package.json').version")
-          NPM_VERSION=$(npm view @cloudcrafter/salesforce-agent-kit version 2>/dev/null || echo "0.0.0")
-          
-          if [ "$CURRENT_VERSION" = "$NPM_VERSION" ]; then
-            echo "Version $CURRENT_VERSION already published, skipping publish"
-            exit 0
-          fi
-          
-          echo "Publishing version $CURRENT_VERSION"
-          npm publish --access public
+        run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
