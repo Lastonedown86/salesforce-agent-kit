@@ -2,12 +2,8 @@ name: Release
 
 on:
   push:
-    branches:
-      - main
-    paths-ignore:
-      - '*.md'
-      - 'docs/**'
-      - '.github/ISSUE_TEMPLATE/**'
+    branches: [main]
+    paths-ignore: ['*.md', 'docs/**', '.github/ISSUE_TEMPLATE/**']
   workflow_dispatch:
     inputs:
       bump:
@@ -15,29 +11,22 @@ on:
         required: true
         default: 'patch'
         type: choice
-        options:
-          - patch
-          - minor
-          - major
+        options: [patch, minor, major]
 
 jobs:
   release:
     runs-on: ubuntu-latest
-    # Skip if this is a release commit or from the bot
-    if: "!contains(github.event.head_commit.message, 'chore: release') && !contains(github.event.head_commit.message, 'chore(release)')"
+    if: "!contains(github.event.head_commit.message, 'chore: release')"
     permissions:
       contents: write
       pull-requests: write
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
 
@@ -46,53 +35,34 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Determine version bump type
+      - name: Determine version bump
         id: bump-type
         run: |
-          # If manually triggered, use the input
           if [ -n "${{ inputs.bump }}" ]; then
             echo "bump=${{ inputs.bump }}" >> $GITHUB_OUTPUT
             echo "should_release=true" >> $GITHUB_OUTPUT
             exit 0
           fi
           
-          # Get commits since last tag
           LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          if [ -z "$LAST_TAG" ]; then
-            COMMITS=$(git log --oneline)
-          else
-            COMMITS=$(git log ${LAST_TAG}..HEAD --oneline)
-          fi
+          COMMITS=$([ -z "$LAST_TAG" ] && git log --oneline || git log ${LAST_TAG}..HEAD --oneline)
           
-          # Check if there are any commits to release
           if [ -z "$COMMITS" ]; then
-            echo "No commits since last tag"
             echo "should_release=false" >> $GITHUB_OUTPUT
             exit 0
           fi
           
-          echo "Commits since last tag:"
-          echo "$COMMITS"
-          
-          # Check for breaking changes (major)
-          if echo "$COMMITS" | grep -qiE "^[a-f0-9]+ (feat|fix|refactor|perf)(\(.+\))?!:|BREAKING CHANGE"; then
+          if echo "$COMMITS" | grep -qiE "!:|BREAKING CHANGE"; then
             echo "bump=major" >> $GITHUB_OUTPUT
-            echo "should_release=true" >> $GITHUB_OUTPUT
-            echo "Detected: MAJOR (breaking change)"
-          # Check for features (minor)
-          elif echo "$COMMITS" | grep -qiE "^[a-f0-9]+ feat(\(.+\))?:"; then
+          elif echo "$COMMITS" | grep -qiE "^[a-f0-9]+ feat"; then
             echo "bump=minor" >> $GITHUB_OUTPUT
-            echo "should_release=true" >> $GITHUB_OUTPUT
-            echo "Detected: MINOR (new feature)"
-          # Check for fixes (patch)
-          elif echo "$COMMITS" | grep -qiE "^[a-f0-9]+ fix(\(.+\))?:"; then
+          elif echo "$COMMITS" | grep -qiE "^[a-f0-9]+ fix"; then
             echo "bump=patch" >> $GITHUB_OUTPUT
-            echo "should_release=true" >> $GITHUB_OUTPUT
-            echo "Detected: PATCH (bug fix)"
           else
-            echo "No releasable commits found (feat, fix, or breaking change)"
             echo "should_release=false" >> $GITHUB_OUTPUT
+            exit 0
           fi
+          echo "should_release=true" >> $GITHUB_OUTPUT
 
       - name: Check for existing release PR
         id: check-pr
@@ -100,43 +70,27 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          EXISTING_PR=$(gh pr list --head "release/" --state open --json number --jq '.[0].number')
-          if [ -n "$EXISTING_PR" ]; then
-            echo "Release PR #$EXISTING_PR already exists, skipping"
+          if gh pr list --head "release/" --state open --json number | grep -q number; then
             echo "skip=true" >> $GITHUB_OUTPUT
           else
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Bump version
-        id: bump
-        if: steps.bump-type.outputs.should_release == 'true' && steps.check-pr.outputs.skip != 'true'
-        run: |
-          BUMP_TYPE="${{ steps.bump-type.outputs.bump }}"
-          npm version $BUMP_TYPE --no-git-tag-version
-          NEW_VERSION=$(node -p "require('./package.json').version")
-          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          echo "Bumped to version $NEW_VERSION ($BUMP_TYPE)"
-
-      - name: Create release branch and PR
+      - name: Create release PR
         if: steps.bump-type.outputs.should_release == 'true' && steps.check-pr.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          BRANCH="release/v${{ steps.bump.outputs.version }}"
+          npm version ${{ steps.bump-type.outputs.bump }} --no-git-tag-version
+          VERSION=$(node -p "require('./package.json').version")
+          BRANCH="release/v$VERSION"
+          
           git checkout -b "$BRANCH"
           git add package.json package-lock.json
-          git commit -m "chore: release v${{ steps.bump.outputs.version }}"
+          git commit -m "chore: release v$VERSION"
           git push origin "$BRANCH"
-          gh pr create --title "chore: release v${{ steps.bump.outputs.version }}" \
-            --body "Automated release PR for version ${{ steps.bump.outputs.version }}
-
-## What's changing
-- Version bump: ${{ steps.bump-type.outputs.bump }}
-- New version: ${{ steps.bump.outputs.version }}
-
-## Checklist
-- [ ] Review the version bump type
-- [ ] Merge when ready to publish to npm" \
-            --base main \
-            --head "$BRANCH"
+          
+          gh pr create \
+            --title "chore: release v$VERSION" \
+            --body "**Version:** $VERSION (${{ steps.bump-type.outputs.bump }})" \
+            --base main --head "$BRANCH"

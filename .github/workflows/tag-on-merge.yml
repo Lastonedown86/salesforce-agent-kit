@@ -1,27 +1,23 @@
-name: Tag on Release Merge
+name: Tag on Merge
 
 on:
   pull_request:
     types: [closed]
-    branches:
-      - main
+    branches: [main]
 
 jobs:
-  tag-release:
-    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
+  tag:
+    if: github.event.pull_request.merged && startsWith(github.event.pull_request.head.ref, 'release/')
     runs-on: ubuntu-latest
     permissions:
       contents: write
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Create and push tag
+      - name: Create tag
         run: |
           VERSION=$(node -p "require('./package.json').version")
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "v$VERSION"
-          git push origin "v$VERSION"
-          echo "Created tag v$VERSION"
+          git tag "v$VERSION" && git push origin "v$VERSION"
