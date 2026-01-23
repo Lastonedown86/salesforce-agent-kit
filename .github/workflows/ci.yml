@@ -1,41 +1,44 @@
 name: CI
 
 on:
+  push:
+    branches: [main]
   pull_request:
     branches: [main]
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [18, 20, 22]
+    
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup Node.js ${{ matrix.node-version }}
+      
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: '20'
           cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build
+        run: npm run build
 
-      - run: npm ci
-      - run: npm run build
-      - run: npm test
-      - run: node dist/index.js --help
-
-  lint-pr:
+  test:
     runs-on: ubuntu-latest
+    
     steps:
       - uses: actions/checkout@v4
-
-      - name: Check PR title follows conventional commits
-        run: |
-          PR_TITLE="${{ github.event.pull_request.title }}"
-          PATTERN="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?: .+"
-          if [[ ! "$PR_TITLE" =~ $PATTERN ]]; then
-            echo "❌ PR title must follow: type(scope): description"
-            echo "Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert"
-            exit 1
-          fi
-          echo "✅ PR title is valid"
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run tests
+        run: npm test

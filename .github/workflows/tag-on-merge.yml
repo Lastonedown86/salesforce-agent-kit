@@ -1,21 +1,21 @@
-name: Tag on Merge
+name: Tag on Release Merge
 
 on:
   pull_request:
     types: [closed]
-    branches: [main]
+    branches:
+      - main
 
 jobs:
-  tag:
-    if: github.event.pull_request.merged && startsWith(github.event.pull_request.head.ref, 'release/')
+  tag-release:
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
     runs-on: ubuntu-latest
     permissions:
       contents: write
 
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Create and push tag
         run: |
