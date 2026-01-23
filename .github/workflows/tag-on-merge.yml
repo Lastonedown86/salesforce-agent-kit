@@ -14,10 +14,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Create tag
+      - name: Create and push tag
         run: |
           VERSION=$(node -p "require('./package.json').version")
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "v$VERSION" && git push origin "v$VERSION"
+          git tag "v$VERSION"
+          git push origin "v$VERSION"
+          echo "Created tag v$VERSION"
