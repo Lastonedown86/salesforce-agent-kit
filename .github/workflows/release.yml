@@ -1,0 +1,147 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '*.md'
+      - 'docs/**'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version bump type (leave empty for auto-detect from commits)'
+        required: false
+        default: ''
+        type: choice
+        options:
+          - ''
+          - patch
+          - minor
+          - major
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Run tests
+        run: npm test
+
+      - name: Determine version bump type
+        id: bump-type
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            echo "bump=${{ inputs.version }}" >> $GITHUB_OUTPUT
+            echo "Using manual version bump: ${{ inputs.version }}"
+            exit 0
+          fi
+          
+          # Get commits since last tag
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$LAST_TAG" ]; then
+            COMMITS=$(git log --oneline)
+          else
+            COMMITS=$(git log ${LAST_TAG}..HEAD --oneline)
+          fi
+          
+          echo "Commits since last tag:"
+          echo "$COMMITS"
+          
+          # Check for breaking changes (major)
+          if echo "$COMMITS" | grep -qiE "^[a-f0-9]+ (feat|fix|refactor|perf)(\(.+\))?!:|BREAKING CHANGE"; then
+            echo "bump=major" >> $GITHUB_OUTPUT
+            echo "Detected: MAJOR (breaking change)"
+          # Check for features (minor)
+          elif echo "$COMMITS" | grep -qiE "^[a-f0-9]+ feat(\(.+\))?:"; then
+            echo "bump=minor" >> $GITHUB_OUTPUT
+            echo "Detected: MINOR (new feature)"
+          # Default to patch
+          else
+            echo "bump=patch" >> $GITHUB_OUTPUT
+            echo "Detected: PATCH (bug fixes, docs, etc.)"
+          fi
+
+      - name: Check if version already published
+        id: check-version
+        run: |
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          NPM_VERSION=$(npm view @cloudcrafter/salesforce-agent-kit version 2>/dev/null || echo "0.0.0")
+          
+          if [ "$CURRENT_VERSION" = "$NPM_VERSION" ]; then
+            echo "needs_bump=true" >> $GITHUB_OUTPUT
+            echo "Current version $CURRENT_VERSION already published, will bump"
+          else
+            echo "needs_bump=false" >> $GITHUB_OUTPUT
+            echo "Current version $CURRENT_VERSION not yet published"
+          fi
+
+      - name: Bump version
+        id: version
+        if: steps.check-version.outputs.needs_bump == 'true'
+        run: |
+          npm version ${{ steps.bump-type.outputs.bump }} -m "chore(release): %s"
+          echo "new_version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+          echo "bumped=true" >> $GITHUB_OUTPUT
+
+      - name: Use existing version
+        id: existing-version
+        if: steps.check-version.outputs.needs_bump == 'false'
+        run: |
+          echo "new_version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+          echo "bumped=false" >> $GITHUB_OUTPUT
+
+      - name: Set final version
+        id: final-version
+        run: |
+          if [ "${{ steps.version.outputs.bumped }}" = "true" ]; then
+            echo "version=${{ steps.version.outputs.new_version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${{ steps.existing-version.outputs.new_version }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Push version bump
+        if: steps.check-version.outputs.needs_bump == 'true'
+        run: |
+          git push
+          git push --tags
+
+      - name: Publish to NPM
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub Release
+        if: steps.check-version.outputs.needs_bump == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.final-version.outputs.version }}
+          name: v${{ steps.final-version.outputs.version }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

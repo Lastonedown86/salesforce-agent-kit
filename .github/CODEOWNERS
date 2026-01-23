@@ -1,0 +1,14 @@
+# Default owners for everything in the repo
+* @Lastonedown86
+
+# Skills and agent content
+/.agent/ @Lastonedown86
+
+# CLI source code
+/src/ @Lastonedown86
+
+# Tests
+/tests/ @Lastonedown86
+
+# CI/CD configuration
+/.github/ @Lastonedown86
