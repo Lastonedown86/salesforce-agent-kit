@@ -14,14 +14,38 @@ jobs:
       contents: write
 
     steps:
-      - name: Checkout code
+      - name: Checkout main
         uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
 
-      - name: Create and push tag
+      - name: Ensure we have latest main
         run: |
-          VERSION=$(node -p "require('./package.json').version")
+          git fetch origin main --depth=1
+          git checkout origin/main
+
+      - name: Create and push tag from merge commit
+        env:
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "v$VERSION"
+
+          if [ -n "$MERGE_SHA" ] && [ "$MERGE_SHA" != "null" ]; then
+            TARGET_SHA="$MERGE_SHA"
+            echo "Using merge commit SHA: $TARGET_SHA"
+            git fetch origin $TARGET_SHA --depth=1 || true
+            git checkout $TARGET_SHA || git checkout origin/main
+          else
+            echo "merge_commit_sha not provided, using origin/main"
+            git fetch origin main --depth=1
+            git checkout origin/main
+            TARGET_SHA=$(git rev-parse HEAD)
+          fi
+
+          VERSION=$(node -p "require('./package.json').version")
+          echo "Tagging version: $VERSION at commit $TARGET_SHA"
+          git tag -a "v$VERSION" -m "Release v$VERSION" $TARGET_SHA
           git push origin "v$VERSION"
-          echo "Created tag v$VERSION"
+          echo "Created annotated tag v$VERSION at $TARGET_SHA"
