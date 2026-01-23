@@ -19,7 +19,8 @@
     "dev": "tsc --watch",
     "test": "npm run build && node --import tsx --test tests/*.test.ts",
     "test:quick": "node --test dist/tests/*.test.js",
-    "prepublishOnly": "npm run build && npm test"
+    "prepublishOnly": "npm run build && npm test",
+    "prepare": "husky || true"
   },
   "keywords": [
     "salesforce",
@@ -51,6 +52,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "husky": "^9.0.0",
     "tsx": "^4.0.0",
     "typescript": "^5.0.0"
   }

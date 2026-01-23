@@ -1,0 +1,46 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Check if README needs updating when skills/workflows/agents change
+STAGED_FILES=$(git diff --cached --name-only)
+
+# Track if significant changes are staged
+SIGNIFICANT_CHANGES=false
+README_STAGED=false
+
+# Check for new or modified skill/workflow/agent files
+if echo "$STAGED_FILES" | grep -qE "^\.agent/(skills|agents|workflows)/.*\.md$"; then
+  SIGNIFICANT_CHANGES=true
+fi
+
+# Check for CLI command changes
+if echo "$STAGED_FILES" | grep -qE "^src/commands/"; then
+  SIGNIFICANT_CHANGES=true
+fi
+
+# Check if README is staged
+if echo "$STAGED_FILES" | grep -q "^README.md$"; then
+  README_STAGED=true
+fi
+
+# Warn if significant changes but README not updated
+if [ "$SIGNIFICANT_CHANGES" = true ] && [ "$README_STAGED" = false ]; then
+  echo ""
+  echo "⚠️  Warning: You're committing changes to skills, workflows, agents, or CLI commands"
+  echo "   but README.md is not being updated."
+  echo ""
+  echo "   If you've added new content, please update README.md to include:"
+  echo "   - New skill categories or skill counts"
+  echo "   - New agents or workflows"
+  echo "   - New CLI commands or options"
+  echo ""
+  echo "   To proceed anyway, commit with: git commit --no-verify"
+  echo ""
+  
+  # Make this a warning, not a blocker (remove 'exit 1' if you want it non-blocking)
+  # exit 1
+fi
+
+# Run build and tests before commit
+npm run build
+npm test
