@@ -155,6 +155,20 @@ Content with code examples, patterns, and best practices...
 
 Contributions are welcome! Please feel free to submit issues or pull requests.
 
+### Automated Releases
+
+This project uses automated releases based on conventional commits:
+
+- `feat:` commits trigger **minor** version bumps (1.1.3 → 1.2.0)
+- `fix:` commits trigger **patch** version bumps (1.1.3 → 1.1.4)
+- `ci:` commits trigger **patch** version bumps (1.1.3 → 1.1.4)
+- `BREAKING CHANGE` in commit message triggers **major** version bumps (1.1.3 → 2.0.0)
+
+The release process is fully automated:
+1. Push commits to main → Release PR created automatically
+2. Merge PR → Git tag created automatically  
+3. Tag push → NPM publish happens automatically
+
 ## License
 
 MIT © cloudcrafter
